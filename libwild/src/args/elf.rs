@@ -243,6 +243,7 @@ const SILENTLY_IGNORED_FLAGS: &[&str] = &[
     "sort-common",
     "stats",
     "verbose",
+    "no-relax-gp",
 ];
 const SILENTLY_IGNORED_SHORT_FLAGS: &[&str] = &[
     "(",
