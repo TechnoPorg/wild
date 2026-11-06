@@ -22,11 +22,12 @@ use crate::fs::FileSystem;
 use crate::fs::FileWriteMode;
 use crate::input_data::FileId;
 use crate::save_dir::SaveDir;
-use hashbrown::HashMap;
-use hashbrown::HashSet;
+use crate::HashMap;
+use crate::HashSet;
 use itertools::Itertools;
 use jobserver::Acquired;
 use jobserver::Client;
+use rapidhash::fast::GlobalState;
 use rayon::ThreadPoolBuilder;
 use std::borrow::Cow;
 use std::fmt::Display;
@@ -799,9 +800,9 @@ impl<T: platform::Args> ArgumentParser<T> {
     #[must_use]
     fn with_syntax(syntax: OptionSyntax) -> Self {
         Self {
-            options: HashMap::new(),
-            short_options: HashMap::new(),
-            prefix_options: HashMap::new(),
+            options: HashMap::with_hasher(GlobalState::default()),
+            short_options: HashMap::with_hasher(GlobalState::default()),
+            prefix_options: HashMap::with_hasher(GlobalState::default()),
             syntax,
         }
     }
@@ -812,7 +813,7 @@ impl<T: platform::Args> ArgumentParser<T> {
             long_names: Vec::new(),
             short_names: Vec::new(),
             prefixes: Vec::new(),
-            sub_options: HashMap::new(),
+            sub_options: HashMap::with_hasher(GlobalState::default()),
             help_text: "",
             _phantom: std::marker::PhantomData,
         }
@@ -824,7 +825,7 @@ impl<T: platform::Args> ArgumentParser<T> {
             long_names: Vec::new(),
             short_names: Vec::new(),
             prefixes: Vec::new(),
-            sub_options: HashMap::new(),
+            sub_options: HashMap::with_hasher(GlobalState::default()),
             help_text: "",
             _phantom: std::marker::PhantomData,
         }
@@ -836,7 +837,7 @@ impl<T: platform::Args> ArgumentParser<T> {
             long_names: Vec::new(),
             short_names: Vec::new(),
             prefixes: Vec::new(),
-            sub_options: HashMap::new(),
+            sub_options: HashMap::with_hasher(GlobalState::default()),
             help_text: "",
             _phantom: std::marker::PhantomData,
         }
@@ -848,7 +849,7 @@ impl<T: platform::Args> ArgumentParser<T> {
             long_names: Vec::new(),
             short_names: Vec::new(),
             prefixes: Vec::new(),
-            sub_options: HashMap::new(),
+            sub_options: HashMap::with_hasher(GlobalState::default()),
             help_text: "",
             _phantom: std::marker::PhantomData,
         }
@@ -1110,9 +1111,8 @@ impl<T: platform::Args> ArgumentParser<T> {
             width = HELP_COL1_WIDTH
         ));
 
-        let mut help_to_options: HashMap<&str, Vec<String>> = HashMap::new();
-        let mut processed_short_options: HashSet<&str> = HashSet::new();
-
+        let mut help_to_options: HashMap<&str, Vec<String>> = HashMap::with_hasher(GlobalState::default());
+        let mut processed_short_options: HashSet<&str> = HashSet::with_hasher(GlobalState::default());
         // Collect all long options and their associated short options
         for (long_name, handler) in &self.options {
             if !handler.help_text.is_empty() {

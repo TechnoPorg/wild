@@ -64,6 +64,9 @@ allow_unsafe = true
 [pkg.object]
 allow_unsafe = true
 
+[pkg.rapidhash]
+allow_unsafe = true
+
 [pkg.rayon]
 allow_unsafe = true
 
@@ -84,9 +87,6 @@ from.build.allow_apis = ["process"]
 allow_unsafe = true
 
 [pkg.smallvec]
-allow_unsafe = true
-
-[pkg.foldhash]
 allow_unsafe = true
 
 [pkg.tracing-attributes]

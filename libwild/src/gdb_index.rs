@@ -21,13 +21,14 @@ use crate::platform::SectionHeader as _;
 use crate::resolution::SectionSlot;
 use crate::timing_phase;
 use crate::verbose_timing_phase;
-use hashbrown::HashMap;
+use crate::HashMap;
 use itertools::Itertools as _;
 use linker_utils::bit_misc::BitExtraction;
 use linker_utils::elf::secnames::DEBUG_INFO_SECTION_NAME_STR;
 use linker_utils::utils::u32_from_slice;
 use linker_utils::utils::u64_from_slice;
 use object::read::elf::SectionHeader as _;
+use rapidhash::fast::GlobalState;
 use rayon::iter::IndexedParallelIterator as _;
 use rayon::iter::IntoParallelIterator as _;
 use rayon::iter::IntoParallelRefIterator as _;
@@ -385,7 +386,7 @@ fn scan_one_object<'data, C: ElfClass>(
     }
 
     // Build offset-to-local-index map for this object's CUs.
-    let mut offset_to_idx: HashMap<u64, u32> = HashMap::with_capacity(cu_boundaries.len());
+    let mut offset_to_idx: HashMap<u64, u32> = HashMap::with_capacity_and_hasher(cu_boundaries.len(), GlobalState::default());
     for (i, cu) in cu_boundaries.iter().enumerate() {
         offset_to_idx.insert(cu.offset, i as u32);
     }
@@ -619,7 +620,7 @@ fn build_address_entries<C: ElfClass>(
             let section_cu_map = if obj_cu_count > 1 {
                 build_section_cu_map(obj.object, obj_cu_count)?
             } else {
-                HashMap::new()
+                HashMap::with_hasher(GlobalState::default())
             };
 
             for (si, slot) in obj.sections.iter().enumerate() {
@@ -658,10 +659,10 @@ fn build_section_cu_map<C: ElfClass>(
 ) -> Result<HashMap<usize, u32>> {
     let boundaries = match section_by_name(object, DEBUG_INFO_SECTION_NAME_STR)? {
         Some(data) => parse_cu_boundaries(&data)?,
-        None => return Ok(HashMap::new()),
+        None => return Ok(HashMap::with_hasher(GlobalState::default())),
     };
     if boundaries.len() != cu_count as usize {
-        return Ok(HashMap::new());
+        return Ok(HashMap::with_hasher(GlobalState::default()));
     }
 
     // Find the relocation section for .debug_info.
@@ -669,10 +670,10 @@ fn build_section_cu_map<C: ElfClass>(
         .section_by_name(".rela.debug_info")
         .or_else(|| object.section_by_name(".rel.debug_info"));
     let Some((_rela_idx, rela_header)) = rela_section else {
-        return Ok(HashMap::new());
+        return Ok(HashMap::with_hasher(GlobalState::default()));
     };
 
-    let mut map: HashMap<usize, u32> = HashMap::new();
+    let mut map: HashMap<usize, u32> = HashMap::with_hasher(GlobalState::default());
 
     if let Some((relas, _)) = rela_header.rela(object::LittleEndian, object.data)? {
         for rela in relas {

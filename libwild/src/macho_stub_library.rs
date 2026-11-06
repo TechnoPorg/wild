@@ -16,10 +16,11 @@ use crate::error::Context as _;
 use crate::error::Result;
 use itertools::Itertools;
 use object::macho::Version;
+use rapidhash::fast::GlobalState;
 use rayon::iter::IntoParallelRefIterator as _;
 use rayon::iter::ParallelIterator as _;
 use serde::Deserialize;
-use std::collections::HashSet;
+use crate::HashSet;
 
 const ARM64_LIB_ARCH: &str = "arm64e-macos";
 
@@ -169,7 +170,7 @@ pub fn parse_defined_library<'data>(input: &'data str) -> Result<DefinedStubLibr
         let exported_libraries: HashSet<_> = exported_libraries.libraries.iter().copied().collect();
         exported_libraries
     } else {
-        HashSet::new()
+        HashSet::with_hasher(GlobalState::default())
     };
 
     for lib in &library_definitions {

@@ -22,6 +22,7 @@
 //! * Prmary part references anything: ValueFlags::HAS_RANGE_LIMITED_REL set for local symbol in the
 //!   object that made the reference.
 
+use crate::HashMap;
 use crate::input_data::FileId;
 use crate::layout;
 use crate::layout::FileLayoutState;
@@ -39,6 +40,7 @@ use crate::value_flags::ValueFlags;
 use crate::verbose_timing_phase;
 use crossbeam_queue::SegQueue;
 use itertools::Itertools as _;
+use rapidhash::fast::GlobalState;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator as _;
@@ -249,7 +251,7 @@ impl ThunkLayoutBuilder {
                 .map(|obj| {
                     verbose_timing_phase!("Collect object primary part thunks");
 
-                    let mut object_symbols = HashSet::new();
+                    let mut object_symbols = HashSet::with_hasher(GlobalState::default());
                     for (i, raw_flags) in per_symbol_flags
                         .raw_range(obj.symbol_id_range)
                         .iter()
@@ -273,7 +275,7 @@ impl ThunkLayoutBuilder {
                     }
                     object_symbols
                 })
-                .reduce(HashSet::new, |mut a, mut b| {
+                .reduce(|| HashSet::with_hasher(GlobalState::default()), |mut a, mut b| {
                     verbose_timing_phase!("Merge thunk block symbols");
 
                     if b.len() > a.len() {
@@ -500,7 +502,7 @@ pub(crate) struct LandingPad {
 #[derive(Debug, Default)]
 pub(crate) struct LandingPadPlan {
     /// Keyed by (group index, file index, input section index).
-    by_section: hashbrown::HashMap<(usize, usize, usize), Vec<LandingPad>>,
+    by_section: HashMap<(usize, usize, usize), Vec<LandingPad>>,
 }
 
 impl LandingPadPlan {
@@ -540,7 +542,7 @@ impl LandingPadPlan {
         file_id: FileId,
         section_index: usize,
         memory_offsets: &mut OutputSectionPartMap<u64>,
-        addresses: &std::sync::Mutex<hashbrown::HashMap<crate::symbol_db::SymbolId, u64>>,
+        addresses: &std::sync::Mutex<HashMap<crate::symbol_db::SymbolId, u64>>,
     ) {
         let pads = self.pads_before_section(file_id, section_index);
         if pads.is_empty() {

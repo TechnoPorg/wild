@@ -13,7 +13,8 @@ use crate::symbol_db::SymbolId;
 use crate::value_flags::AtomicPerSymbolFlags;
 use crate::value_flags::FlagsForSymbol as _;
 use colored::Colorize as _;
-use hashbrown::HashSet;
+use rapidhash::fast::GlobalState;
+use crate::HashSet;
 use std::fmt::Write as _;
 
 /// Prints information about a symbol when dropped. We do this when dropped so that we can print
@@ -25,7 +26,7 @@ pub(crate) enum SymbolInfoPrinter {
 }
 
 pub(crate) struct State {
-    loaded_file_ids: hashbrown::HashSet<FileId>,
+    loaded_file_ids: HashSet<FileId>,
     name: String,
 
     /// Our output the last time `update` was called. This is what will be printed when dropped
@@ -104,7 +105,7 @@ impl SymbolInfoPrinter {
 
         let mut all_symbol_ids = (0..symbol_db.num_symbols()).map(SymbolId::from_usize);
 
-        let mut printed_ids = HashSet::new();
+        let mut printed_ids = HashSet::with_hasher(GlobalState::default());
 
         while let Some((symbol_id, is_related)) = related_ids
             .pop()

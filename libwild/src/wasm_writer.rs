@@ -35,9 +35,10 @@ use crate::wasm::output_section_id;
 use crate::wasm::relocation_type_to_string;
 use crate::wasm::section_id;
 use crate::wasm::wasm_symbol_name_str;
-use hashbrown::HashMap;
-use hashbrown::HashSet;
+use crate::HashMap;
+use crate::HashSet;
 use leb128::write::unsigned_len as uleb128_size;
+use rapidhash::fast::GlobalState;
 use rayon::prelude::*;
 use std::borrow::Cow;
 use std::ops::Range;
@@ -1361,8 +1362,8 @@ pub(crate) fn build_target_features_section<'a>(
     explicit_features: Option<&'a [String]>,
     check_features: bool,
 ) -> Result<Option<wasm_encoder::CustomSection<'static>>> {
-    let mut used: HashSet<&'a str> = HashSet::new();
-    let mut disallowed: HashMap<&'a str, crate::input_data::FileId> = HashMap::new();
+    let mut used: HashSet<&'a str> = HashSet::with_hasher(GlobalState::default());
+    let mut disallowed: HashMap<&'a str, crate::input_data::FileId> = HashMap::with_hasher(GlobalState::default());
     // `--no-check-features` with `--features` keeps only the explicit names.
     if explicit_features.is_none() || check_features {
         for entry in features {

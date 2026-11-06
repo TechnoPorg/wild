@@ -56,8 +56,9 @@ use crate::verbose_timing_phase;
 use crate::version_script::RustVersionScript;
 use crate::version_script::VersionScript;
 use crossbeam_queue::SegQueue;
-use hashbrown::HashMap;
-use hashbrown::HashSet;
+use rapidhash::fast::GlobalState;
+use crate::HashMap;
+use crate::HashSet;
 use hashbrown::hash_map;
 use itertools::Itertools;
 use rayon::iter::IndexedParallelIterator as _;
@@ -360,8 +361,8 @@ impl<'data, P: Platform> SymbolDb<'data, P> {
         buckets.resize_with(num_buckets, || SymbolBucket {
             name_to_id: Default::default(),
             versioned_name_to_id: Default::default(),
-            alternative_definitions: HashMap::new(),
-            alternative_versioned_definitions: HashMap::new(),
+            alternative_definitions: HashMap::with_hasher(GlobalState::default()),
+            alternative_versioned_definitions: HashMap::with_hasher(GlobalState::default()),
         });
 
         let mut symbol_db = SymbolDb {

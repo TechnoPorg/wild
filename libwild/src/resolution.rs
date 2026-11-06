@@ -1058,7 +1058,7 @@ fn assign_section_ids_partial<'data, P: Platform>(
         .par_iter()
         .map(|group| {
             let mut buckets = vec![Vec::new(); num_buckets];
-            let hasher = foldhash::fast::FixedState::default();
+            let hasher = rapidhash::fast::GlobalState::default();
             for file in &group.files {
                 let ResolvedFile::Object(object) = file else {
                     continue;

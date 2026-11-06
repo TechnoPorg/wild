@@ -25,8 +25,9 @@ use crate::platform::ObjectFile;
 use crate::platform::Platform;
 use crate::resolution::SectionSlot;
 use crate::symbol_db::SymbolDb;
-use hashbrown::HashMap;
+use crate::HashMap;
 use itertools::Itertools;
+use rapidhash::fast::GlobalState;
 use std::path::PathBuf;
 
 pub(crate) fn maybe_write_gc_stats<'data, P: Platform>(
@@ -63,7 +64,7 @@ fn write_gc_stats<'data, P: Platform>(
     let mut kept = 0;
     let mut discarded = 0;
     let current_dir = std::fs::canonicalize(std::env::current_dir()?)?;
-    let mut files = HashMap::new();
+    let mut files = HashMap::with_hasher(GlobalState::default());
     for group in group_layouts {
         for file in &group.files {
             let FileLayout::Object(obj) = file else {

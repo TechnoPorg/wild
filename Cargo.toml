@@ -54,7 +54,6 @@ flate2 = { version = "1.1.0", default-features = false, features = ["zlib-rs"] }
 zlib-rs = { version = "0.6.4", default-features = false, features = [
   "rust-allocator",
 ] }
-foldhash = { version = "0.2.0", default-features = false, features = ["std"] }
 gimli = { version = "0.34.0", default-features = false, features = [
   "read-all",
 ] }
@@ -111,6 +110,10 @@ postcard = { version = "1.1.1", default-features = false, features = [
 ] }
 rand = { version = "0.10.2", default-features = false, features = [
   "thread_rng",
+] }
+rapidhash = { version = "4.5.1", default-features = false, features = [
+  "std",
+  "unsafe",
 ] }
 rayon = { version = "1.5.1", default-features = false }
 regex = { version = "1.12.0", default-features = false, features = ["std"] }
@@ -337,5 +340,5 @@ mixed_read_write_in_expression = "warn"
 as_ptr_cast_mut = "warn"
 
 # We do a bit of hashing, especially in the integration tests. Optimising this speeds up tests.
-[profile.dev.package."foldhash"]
+[profile.dev.package."rapidhash"]
 opt-level = 2

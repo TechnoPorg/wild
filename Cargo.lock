@@ -825,7 +825,6 @@ dependencies = [
  "crossbeam-utils",
  "derive_more",
  "flate2",
- "foldhash",
  "gimli 0.34.0",
  "glob",
  "hashbrown",
@@ -846,6 +845,7 @@ dependencies = [
  "object 0.40.0",
  "perf-event",
  "perfetto-recorder",
+ "rapidhash",
  "rayon",
  "serde",
  "sha2",
@@ -1428,6 +1428,15 @@ name = "rand_core"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
+
+[[package]]
+name = "rapidhash"
+version = "4.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5da7e78a036ce858e8d55b7e7dc8ba3a88b78350fd2155d3591bbd966b58589e"
+dependencies = [
+ "rustversion",
+]
 
 [[package]]
 name = "rayon"
@@ -2099,7 +2108,6 @@ dependencies = [
  "blake3",
  "dhat",
  "diff",
- "foldhash",
  "gimli 0.34.0",
  "hex",
  "itertools 0.15.0",
@@ -2112,6 +2120,7 @@ dependencies = [
  "object 0.40.0",
  "os_info",
  "rand",
+ "rapidhash",
  "regex",
  "serde",
  "serde-keyvalue",

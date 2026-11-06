@@ -18,7 +18,8 @@ use crate::linker_script::skip_comments_and_whitespace;
 use crate::symbol::UnversionedSymbolName;
 use crate::timing_phase;
 use glob::Pattern;
-use hashbrown::HashMap;
+use rapidhash::fast::GlobalState;
+use crate::HashMap;
 use hashbrown::HashSet;
 use symbolic_demangle::Demangle;
 use symbolic_demangle::DemangleOptions;
@@ -95,7 +96,7 @@ pub(crate) enum SymbolMatcher<'data> {
 #[derive(Debug, Default, PartialEq, Eq)]
 pub(crate) struct BasicMatchRules<'data> {
     exact: HashSet<PreHashed<UnversionedSymbolName<'data>>, PassThroughHasher>,
-    escaped_exact: HashSet<Vec<u8>>,
+    escaped_exact: crate::HashSet<Vec<u8>>,
     star_globs: Vec<Pattern>,
     nonstar_globs: Vec<Pattern>,
     matches_all: bool,
@@ -567,7 +568,7 @@ impl<'data> From<RawVersionBody<'data>> for VersionScript<'data> {
                         version_body,
                         ..Default::default()
                     }],
-                    version_name_mapping: HashMap::new(),
+                    version_name_mapping: HashMap::with_hasher(GlobalState::default()),
                 })
             }
         }

@@ -102,8 +102,7 @@ use crate::writable_elf::WritableRela;
 use crate::writable_elf::WritableRelr;
 use crate::writable_elf::WritableSectionHeader;
 use crate::writable_elf::WritableSymbol;
-use foldhash::HashSet;
-use hashbrown::HashMap;
+use crate::HashMap;
 use indexmap::IndexMap;
 use itertools::Itertools as _;
 use leb128::write::unsigned_len as uleb128_size;
@@ -146,6 +145,8 @@ use object::read::elf::Dyn as _;
 use object::read::elf::FileHeader as _;
 use object::read::elf::RelocationSections;
 use object::read::elf::SectionHeader as _;
+use rapidhash::RapidHashSet;
+use rapidhash::fast::GlobalState;
 use rayon::Scope;
 use rayon::prelude::*;
 use smallvec::SmallVec;
@@ -2747,7 +2748,7 @@ impl<C: ElfClass> platform::Platform for Elf<C> {
             location_counters,
         );
 
-        let mut segments_map = HashMap::new();
+        let mut segments_map = HashMap::with_hasher(GlobalState::default());
         let mut ordered_sections = Vec::new();
         let mut segment_entries = Vec::new();
 
@@ -5087,11 +5088,11 @@ fn merge_gnu_property_notes<'states, 'data: 'states, C: ElfClass, A: Arch>(
     // Merge bits of each property type based on type: OR or AND operation.
     // Within a single file, OR the bits (accumulate all features the file has).
     // Across files, AND the bits (only keep features all files support).
-    let mut property_map: HashMap<_, (u32, PropertyClass)> = HashMap::new();
+    let mut property_map: HashMap<_, (u32, PropertyClass)> = HashMap::with_hasher(GlobalState::default());
 
     for file_props in &properties_per_file {
         // First OR within file to accumulate all features this file has.
-        let mut file_map: HashMap<_, (u32, PropertyClass)> = HashMap::new();
+        let mut file_map: HashMap<_, (u32, PropertyClass)> = HashMap::with_hasher(GlobalState::default());
         for prop in *file_props {
             let Some(property_class) = A::get_property_class(prop.ptype.0) else {
                 continue;
@@ -6329,7 +6330,7 @@ pub(crate) struct LayoutResourcesExt<'data> {
 }
 
 #[derive(Debug)]
-struct Sonames<'data>(HashSet<&'data [u8]>);
+struct Sonames<'data>(RapidHashSet<&'data [u8]>);
 
 impl<'data> Sonames<'data> {
     /// Builds an index of the DT_SONAMEs of the input dynamic objects. Note, that we include

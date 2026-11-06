@@ -50,7 +50,8 @@ use crate::timing_phase;
 use crate::verbose_timing_phase;
 use crossbeam_queue::ArrayQueue;
 use crossbeam_utils::atomic::AtomicCell;
-use hashbrown::HashMap;
+use rapidhash::fast::GlobalState;
+use crate::HashMap;
 use itertools::Itertools as _;
 use rayon::Scope;
 use sharded_offset_map::OffsetMap;
@@ -178,7 +179,7 @@ impl Default for MergedStringsSection<'_> {
             buckets: Default::default(),
             bucket_offsets: [0; MERGE_STRING_BUCKETS],
             string_offsets: Default::default(),
-            overflowed_string_offsets: HashMap::new(),
+            overflowed_string_offsets: HashMap::with_hasher(GlobalState::default()),
         }
     }
 }

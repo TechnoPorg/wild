@@ -29,7 +29,8 @@ use crate::timing_phase;
 use crate::verbose_timing_phase;
 use colosseum::sync::Arena;
 use crossbeam_queue::SegQueue;
-use hashbrown::HashMap;
+use rapidhash::fast::GlobalState;
+use crate::HashMap;
 use itertools::Itertools as _;
 use rayon::Scope;
 use rayon::iter::IntoParallelIterator;
@@ -376,7 +377,7 @@ impl<'data, F: FileSystem> FileLoader<'data, F> {
         self.resolved_framework_search_path =
             args.resolve_framework_search_path(self.file_system.as_ref());
 
-        let mut inputs_by_path: HashMap<PathBuf, InputLoadInfo> = HashMap::new();
+        let mut inputs_by_path: HashMap<PathBuf, InputLoadInfo> = HashMap::with_hasher(GlobalState::default());
 
         let mut initial_work = Vec::with_capacity(inputs.len());
         for input in inputs {
@@ -1331,7 +1332,8 @@ mod tests {
     use crate::fs::OutputOptions;
     use crate::platform::Args as _;
     use colosseum::sync::Arena;
-    use hashbrown::HashMap;
+    use rapidhash::fast::GlobalState;
+    use crate::HashMap;
     use std::path::Path;
     use std::path::PathBuf;
     use std::sync::Arc;
@@ -1396,8 +1398,10 @@ mod tests {
             (InputSpec::Search("foo.o".into()), None, "foo.o"),
         ] {
             let path = Path::new("libs").join(filename);
+            let mut entries = HashMap::with_hasher(GlobalState::default());
+            entries.extend([(path.clone(), FileType::File)]);
             let file_system = MemoryFileSystem {
-                entries: [(path.clone(), FileType::File)].into(),
+                entries,
             };
 
             let input = Input {
@@ -1453,8 +1457,10 @@ mod tests {
         let framework_search_path = [Path::new("Frameworks").into()];
         for filename in ["Foo.framework/Foo.tbd", "Foo.framework/Foo"] {
             let path = Path::new("Frameworks").join(filename);
+            let mut entries = HashMap::with_hasher(GlobalState::default());
+            entries.extend([(path.clone(), FileType::File)]);
             let file_system = MemoryFileSystem {
-                entries: [(path.clone(), FileType::File)].into(),
+                entries,
             };
             let input = Input {
                 spec: InputSpec::Framework("Foo".into()),
@@ -1480,8 +1486,8 @@ mod tests {
         for chroot in [None, Some("/virtual-root"), Some("relative-root")] {
             let mut common = CommonArgs::default();
             common.chroot = chroot.map(|path| Path::new(path).into());
-            let file_system = MemoryFileSystem {
-                entries: [
+                    let mut entries = HashMap::with_hasher(GlobalState::default());
+            entries.extend([
                     (
                         common
                             .resolve_input_path(Path::new("/sdk/vendor"))
@@ -1494,8 +1500,9 @@ mod tests {
                             .into_owned(),
                         FileType::File,
                     ),
-                ]
-                .into(),
+                ]);
+            let file_system = MemoryFileSystem {
+                entries,
             };
             let mut args = MachOArgs {
                 common,

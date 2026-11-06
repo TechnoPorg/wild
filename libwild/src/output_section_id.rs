@@ -36,8 +36,9 @@ use crate::program_segments::ProgramSegmentId;
 use crate::program_segments::ProgramSegments;
 use crate::timing_phase;
 use core::slice;
-use hashbrown::HashMap;
+use crate::HashMap;
 use itertools::multizip;
+use rapidhash::fast::GlobalState;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::hash::Hash;
@@ -893,9 +894,9 @@ impl<'data, P: Platform> OutputSections<'data, P> {
             section_infos: OutputSectionMap::from_values(section_infos),
             base_address,
             has_custom_base_address: false,
-            custom_by_identity: HashMap::new(),
+            custom_by_identity: HashMap::with_hasher(GlobalState::default()),
             output_section_indexes: Default::default(),
-            init_fini_by_priority: HashMap::new(),
+            init_fini_by_priority: HashMap::with_hasher(GlobalState::default()),
             rosegment: true,
             output_kind,
         }

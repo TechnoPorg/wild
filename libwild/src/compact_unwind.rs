@@ -1,5 +1,6 @@
 //! Builds a Mach-O compact unwind section.
 
+use crate::HashMap;
 use crate::ensure;
 use crate::error::Result;
 use crate::macho::ResolvedUnwindInfo;
@@ -7,9 +8,9 @@ use crate::macho::UnwindInfoWithRelocs;
 use crate::symbol_db::SymbolId;
 use crate::verbose_timing_phase;
 use anyhow::Context;
-use hashbrown::HashMap;
 use indexmap::IndexMap;
 use itertools::Itertools;
+use rapidhash::fast::GlobalState;
 use zerocopy::FromBytes;
 use zerocopy::Immutable;
 use zerocopy::IntoBytes;
@@ -137,7 +138,7 @@ struct EncodingPalette {
 
 impl EncodingPalette {
     fn record_encodings(&mut self, encodings: &[u32]) {
-        let mut encoding_histogram = HashMap::new();
+        let mut encoding_histogram = HashMap::with_hasher(GlobalState::default());
         for &encoding in encodings {
             *encoding_histogram.entry(encoding).or_insert(0usize) += 1;
         }

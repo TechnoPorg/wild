@@ -19,7 +19,8 @@ use crate::elf::File;
 use crate::elf_aarch64::MIN_BRANCH_RANGE;
 use crate::ensure;
 use crate::platform::ObjectFile;
-use hashbrown::HashMap;
+use crate::HashMap;
+use rapidhash::fast::GlobalState;
 use smallvec::SmallVec;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering::Relaxed;
@@ -214,7 +215,7 @@ pub(crate) fn patch_erratum_sequences<C: ElfClass>(
     section_index: object::SectionIndex,
     patch_count: &AtomicU64,
 ) -> Result<HashMap<u64, u64>> {
-    let mut mapping = HashMap::new();
+    let mut mapping = HashMap::with_hasher(GlobalState::default());
     let mut mapping_symbols = None;
     let aligned_section_size = section_size.next_multiple_of(INSN_SIZE);
     ensure!(

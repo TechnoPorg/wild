@@ -31,8 +31,8 @@ use crate::output_kind::OutputKind;
 use crate::output_section_id::SectionName;
 use crate::platform;
 use crate::platform::Args as _;
-use hashbrown::HashMap;
-use hashbrown::HashSet;
+use crate::HashMap;
+use crate::HashSet;
 use indexmap::IndexSet;
 use itertools::Itertools;
 use object::Endianness;
@@ -40,6 +40,7 @@ use object::elf::GNU_PROPERTY_X86_ISA_1_BASELINE;
 use object::elf::GNU_PROPERTY_X86_ISA_1_V2;
 use object::elf::GNU_PROPERTY_X86_ISA_1_V3;
 use object::elf::GNU_PROPERTY_X86_ISA_1_V4;
+use rapidhash::fast::GlobalState;
 use std::ffi::CString;
 use std::num::NonZero;
 use std::num::NonZeroU32;
@@ -428,7 +429,7 @@ impl Default for ElfArgs {
             export_list: Vec::new(),
             export_list_path: None,
             defsym: Vec::new(),
-            section_start: HashMap::new(),
+            section_start: HashMap::with_hasher(GlobalState::default()),
             ttext: None,
             image_base: None,
             tdata: None,
@@ -1604,7 +1605,7 @@ fn setup_argument_parser() -> ArgumentParser<ElfArgs> {
                 match &mut args.exclude_libs {
                     ExcludeLibs::All => {}
                     ExcludeLibs::None => {
-                        let mut set = HashSet::new();
+                        let mut set = HashSet::with_hasher(GlobalState::default());
                         set.insert(Box::from(lib));
                         args.exclude_libs = ExcludeLibs::Some(set);
                     }

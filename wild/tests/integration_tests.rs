@@ -5694,7 +5694,7 @@ impl LinkCommand {
             hashes.push_str(": ");
             match std::fs::read(path) {
                 Ok(contents) => {
-                    let mut hasher = foldhash::fast::FixedState::default().build_hasher();
+                    let mut hasher = rapidhash::fast::GlobalState::default().build_hasher();
                     hasher.write(&contents);
                     write!(&mut hashes, "{:x}", hasher.finish()).unwrap();
                 }

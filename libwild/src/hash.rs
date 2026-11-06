@@ -33,7 +33,7 @@ impl BuildHasher for PassThroughHasher {
 }
 
 pub(crate) fn hash_bytes(bytes: &[u8]) -> u64 {
-    let mut hasher = foldhash::fast::FixedState::default().build_hasher();
+    let mut hasher = rapidhash::fast::GlobalState::default().build_hasher();
     hasher.write(bytes);
     hasher.finish()
 }

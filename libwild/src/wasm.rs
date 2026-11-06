@@ -27,11 +27,12 @@ use crate::wasm_writer::OutputExport;
 use crate::wasm_writer::OutputGlobal;
 use crate::wasm_writer::OutputImport;
 use crate::wasm_writer::OutputImportEntity;
-use hashbrown::HashMap;
-use hashbrown::HashSet;
+use crate::HashMap;
+use crate::HashSet;
 use leb128::write::signed_len as sleb128_size;
 use leb128::write::unsigned_len as uleb128_size;
 use linker_utils::utils::u32_from_slice;
+use rapidhash::fast::GlobalState;
 use rayon::prelude::*;
 use std::borrow::Cow;
 use std::ops::Range;
@@ -1646,9 +1647,9 @@ fn collect_target_feature_sets<'data>(
     HashSet<&'data str>,
     HashMap<&'data str, crate::input_data::FileId>,
 )> {
-    let mut used: HashSet<&'data str> = HashSet::new();
+    let mut used: HashSet<&'data str> = HashSet::with_hasher(GlobalState::default());
     // First file that disallowed each feature.
-    let mut disallowed: HashMap<&'data str, crate::input_data::FileId> = HashMap::new();
+    let mut disallowed: HashMap<&'data str, crate::input_data::FileId> = HashMap::with_hasher(GlobalState::default());
 
     for input in layout_inputs {
         for feature in input.target_features {
@@ -3484,7 +3485,7 @@ fn report_disallowed_unresolved_imports<'data>(
     }
 
     let mut errors: Vec<String> = Vec::new();
-    let mut seen: HashSet<(String, String)> = HashSet::new();
+    let mut seen: HashSet<(String, String)> = HashSet::with_hasher(GlobalState::default());
 
     for (input, res) in inputs.iter().zip(resolutions.iter()) {
         let file_display = symbol_db.file(input.file_id).to_string();
@@ -3546,8 +3547,8 @@ fn collect_shared_unresolved_imports<'data>(
 
     let mut functions: Vec<SharedFunctionImport<'data>> = Vec::new();
     let mut globals: Vec<SharedGlobalImport<'data>> = Vec::new();
-    let mut func_key_to_idx: HashMap<(&str, &str), u32> = HashMap::new();
-    let mut global_key_to_idx: HashMap<(&str, &str), u32> = HashMap::new();
+    let mut func_key_to_idx: HashMap<(&str, &str), u32> = HashMap::with_hasher(GlobalState::default());
+    let mut global_key_to_idx: HashMap<(&str, &str), u32> = HashMap::with_hasher(GlobalState::default());
     let mut function_indices = Vec::with_capacity(inputs.len());
     let mut global_indices = Vec::with_capacity(inputs.len());
 
@@ -4167,7 +4168,7 @@ fn absorb_weak_undef_function_imports<'data>(
     let pure_weak_flags: Vec<Vec<bool>> =
         inputs.iter().map(pure_weak_function_import_flags).collect();
 
-    let mut non_weak_names = HashSet::new();
+    let mut non_weak_names = HashSet::with_hasher(GlobalState::default());
     for (input, (res, flags)) in inputs
         .iter()
         .zip(resolutions.iter().zip(pure_weak_flags.iter()))
@@ -4189,7 +4190,7 @@ fn absorb_weak_undef_function_imports<'data>(
     }
 
     let mut stubs: Vec<WeakUndefFunctionStub> = Vec::new();
-    let mut name_to_stub: HashMap<&str, u32> = HashMap::new();
+    let mut name_to_stub: HashMap<&str, u32> = HashMap::with_hasher(GlobalState::default());
 
     for (input, (res, flags)) in inputs
         .iter()
@@ -4350,18 +4351,18 @@ fn scan_object_layout_relocations(
     verbose_timing_phase!("Scan Wasm object layout relocations");
 
     let mut got_mem_first = Vec::new();
-    let mut got_mem_seen = HashSet::new();
+    let mut got_mem_seen = HashSet::with_hasher(GlobalState::default());
     let mut got_mem_hits = Vec::new();
     let mut got_func_first = Vec::new();
-    let mut got_func_seen = HashSet::new();
+    let mut got_func_seen = HashSet::with_hasher(GlobalState::default());
     let mut got_func_hits = Vec::new();
     let mut table_syms = Vec::new();
-    let mut table_sym_seen = HashSet::new();
+    let mut table_sym_seen = HashSet::with_hasher(GlobalState::default());
     let mut needs_memory_base = false;
     let mut needs_table_base = false;
     let mut needs_table = !input.table_imports.is_empty();
     let mut undefined_data_errors = Vec::new();
-    let mut seen_undefined_data = HashSet::new();
+    let mut seen_undefined_data = HashSet::with_hasher(GlobalState::default());
 
     for reloc in input
         .code_relocations
@@ -4467,10 +4468,10 @@ fn scan_layout_relocations(
         .map(|input| scan_object_layout_relocations(input, symbol_db, check_undefined_data))
         .collect();
 
-    let mut mem_def_to_slot: HashMap<SymbolId, usize> = HashMap::new();
+    let mut mem_def_to_slot: HashMap<SymbolId, usize> = HashMap::with_hasher(GlobalState::default());
     let mut mem_entries = Vec::new();
     let mut per_object_got_mem_slots = vec![Vec::new(); layout_inputs.len()];
-    let mut func_def_to_slot: HashMap<SymbolId, usize> = HashMap::new();
+    let mut func_def_to_slot: HashMap<SymbolId, usize> = HashMap::with_hasher(GlobalState::default());
     let mut func_entries = Vec::new();
     let mut per_object_got_func_slots = vec![Vec::new(); layout_inputs.len()];
     let mut needs_memory_base = false;
@@ -4478,7 +4479,7 @@ fn scan_layout_relocations(
     let mut needs_table = false;
     let mut table_index_symbol_indices = vec![Vec::new(); layout_inputs.len()];
     let mut undefined_data_errors: Vec<String> = Vec::new();
-    let mut seen_undefined_data: HashSet<(String, String)> = HashSet::new();
+    let mut seen_undefined_data: HashSet<(String, String)> = HashSet::with_hasher(GlobalState::default());
 
     for (obj_idx, scan) in object_scans.into_iter().enumerate() {
         let scan = scan?;
@@ -4686,7 +4687,7 @@ fn absorb_got_imports<E>(
         })
         .collect::<Result<_>>()?;
 
-    let mut name_to_slot: HashMap<&[u8], usize> = HashMap::new();
+    let mut name_to_slot: HashMap<&[u8], usize> = HashMap::with_hasher(GlobalState::default());
     for (slot, name) in names.iter().enumerate() {
         name_to_slot.entry(name.bytes()).or_insert(slot);
     }
@@ -6231,7 +6232,7 @@ fn collect_dynamic_exports<'data>(
     let mut used_features = if symbol_db.args.features.is_none() {
         collect_target_feature_sets(layout_inputs)?.0
     } else {
-        HashSet::new()
+        HashSet::with_hasher(GlobalState::default())
     };
     apply_explicit_features(
         &mut used_features,
@@ -6975,7 +6976,7 @@ fn finalize_indirect_function_table(
 
     // Collect output function indices that must appear in the table.
     let mut needed: Vec<u32> = Vec::new();
-    let mut seen = HashSet::new();
+    let mut seen = HashSet::with_hasher(GlobalState::default());
 
     for (obj_idx, (input, sym_indices)) in layout_inputs
         .iter()

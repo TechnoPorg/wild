@@ -82,14 +82,15 @@ use crate::value_flags::FlagsForSymbol as _;
 use crate::value_flags::PerSymbolFlags;
 use crate::value_flags::ValueFlags;
 use crate::verbose_timing_phase;
-use hashbrown::HashMap;
-use hashbrown::HashSet;
+use crate::HashMap;
+use crate::HashSet;
 use itertools::Itertools;
 use linker_utils::elf::RelocationKind;
 use linker_utils::relaxation::RelaxDeltaMap;
 use linker_utils::relaxation::SectionRelaxDeltas;
 use linker_utils::relaxation::opt_input_to_output;
 use object::SectionIndex;
+use rapidhash::fast::GlobalState;
 use rayon::Scope;
 use rayon::iter::IndexedParallelIterator;
 use rayon::iter::IntoParallelIterator;
@@ -296,7 +297,7 @@ pub fn compute<'data, P: Platform, A: Arch<Platform = P>, F: FileSystem>(
         &finalise_sizes_ext,
     )?;
 
-    let mut memory_regions = HashMap::new();
+    let mut memory_regions = HashMap::with_hasher(GlobalState::default());
     for s in &linker_scripts {
         for region in &s.parsed.memory_regions {
             memory_regions
@@ -429,7 +430,7 @@ pub fn compute<'data, P: Platform, A: Arch<Platform = P>, F: FileSystem>(
         .take(thunk_blocks.len())
         .collect();
 
-    let thunk_landing_pad_addresses_out = Mutex::new(HashMap::<SymbolId, u64>::new());
+    let thunk_landing_pad_addresses_out = Mutex::new(HashMap::<SymbolId, u64>::with_hasher(GlobalState::default()));
 
     let resources = FinaliseLayoutResources {
         symbol_db: &symbol_db,
@@ -4512,7 +4513,7 @@ fn new_object_layout_state<P: Platform>(
         thunk_block_id: ThunkBlockId::default(),
         owns_thunk_block: false,
         post_gc_primary_bytes: 0,
-        erratum_sections: HashMap::new(),
+        erratum_sections: HashMap::with_hasher(GlobalState::default()),
     })
 }
 
@@ -6243,7 +6244,7 @@ fn compute_layout_sections<'data, P: Platform>(
          section_layouts: &OutputSectionMap<OutputRecordLayout>,
          resolved_lc: &[ResolvedLocationCounter],
          laid_out_mem_offsets: &OutputSectionPartMap<Option<u64>>| {
-            let mut visited_nodes = HashSet::new();
+            let mut visited_nodes = HashSet::with_hasher(GlobalState::default());
             evaluate_early_expression(
                 expr,
                 loc,
@@ -6728,7 +6729,7 @@ fn compute_segment_alignments<'data, P: Platform>(
 ) -> HashMap<ProgramSegmentId, Alignment> {
     timing_phase!("Computing segment alignments");
 
-    let mut segment_alignments: HashMap<ProgramSegmentId, Alignment> = HashMap::new();
+    let mut segment_alignments: HashMap<ProgramSegmentId, Alignment> = HashMap::with_hasher(GlobalState::default());
     let mut active_load_segments: Vec<ProgramSegmentId> = Vec::new();
 
     for event in output_order {
@@ -7063,7 +7064,7 @@ fn test_no_disallowed_overlaps() {
         &program_segments,
         &output_order,
         &symbol_db,
-        &mut HashMap::new(),
+        &mut HashMap::with_hasher(GlobalState::default()),
         0,
     )
     .unwrap();

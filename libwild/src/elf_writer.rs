@@ -100,7 +100,7 @@ use crate::writable_elf::WritableRela as _;
 use crate::writable_elf::WritableRelr as _;
 use crate::writable_elf::WritableSectionHeader as _;
 use crate::writable_elf::WritableSymbol as _;
-use hashbrown::HashMap;
+use crate::HashMap;
 use linker_utils::elf::Bias;
 use linker_utils::elf::DynamicRelocationKind;
 use linker_utils::elf::RISCV_ATTRIBUTE_VENDOR_NAME;
@@ -139,6 +139,7 @@ use object::read::elf::Crel;
 use object::read::elf::Rela as _;
 use object::read::elf::SectionHeader as _;
 use object::read::elf::Sym as _;
+use rapidhash::fast::GlobalState;
 use rayon::iter::IndexedParallelIterator;
 use rayon::iter::IntoParallelIterator as _;
 use rayon::iter::IntoParallelRefIterator as _;
@@ -2559,7 +2560,7 @@ fn write_section_reversed<'data, C: ElfClass, A: Arch<Platform = elf::Elf<C>>>(
                 crel.r_offset = section_size.saturating_sub(crel.r_offset + word_size as u64);
                 Ok(elf::ElfCrel::new(crel))
             }),
-            &HashMap::new(),
+            &HashMap::with_hasher(GlobalState::default()),
             layout,
             table_writer,
             trace,
@@ -2574,7 +2575,7 @@ fn write_section_reversed<'data, C: ElfClass, A: Arch<Platform = elf::Elf<C>>>(
                     elf::ElfCrel::new(crel)
                 })
             }),
-            &HashMap::new(),
+            &HashMap::with_hasher(GlobalState::default()),
             layout,
             table_writer,
             trace,
@@ -2658,7 +2659,7 @@ fn write_section_raw<'out, 'data, C: ElfClass, A: Arch<Platform = elf::Elf<C>>>(
         let out = section_buffer.split_off_mut(..allocation_size).unwrap();
         let object_section = object.object.section(section_index)?;
         if object_section.sh_type(LittleEndian) == object::elf::SHT_NOBITS {
-            return Ok((out, HashMap::new()));
+            return Ok((out, HashMap::with_hasher(GlobalState::default())));
         }
         let relax_deltas = object.section_relax_deltas.get(section_index.0);
 
@@ -2728,10 +2729,10 @@ fn write_section_raw<'out, 'data, C: ElfClass, A: Arch<Platform = elf::Elf<C>>>(
                 .fetch_add(info.maximal_padding as u64, Relaxed);
             Ok((out, instruction_mapping))
         } else {
-            Ok((&mut out[..effective_size], HashMap::new()))
+            Ok((&mut out[..effective_size], HashMap::with_hasher(GlobalState::default())))
         }
     } else {
-        Ok((&mut [], HashMap::new()))
+        Ok((&mut [], HashMap::with_hasher(GlobalState::default())))
     }
 }
 
@@ -3413,7 +3414,7 @@ fn write_eh_frame_relocations<
     let eh_frame_hdr_address = layout.mem_address_of_built_in(output_section_id::EH_FRAME_HDR);
 
     // Map from input offset to output offset of each CIE.
-    let mut cies_offset_conversion: HashMap<u32, u32> = HashMap::new();
+    let mut cies_offset_conversion: HashMap<u32, u32> = HashMap::with_hasher(GlobalState::default());
 
     while input_pos + PREFIX_LEN <= data.len() {
         let prefix =
@@ -3534,7 +3535,7 @@ fn write_eh_frame_relocations<
                     &RelocationCache::default(),
                     &iter::empty(),
                     None,
-                    &HashMap::new(),
+                    &HashMap::with_hasher(GlobalState::default()),
                 )
                 .with_context(|| {
                     format!(

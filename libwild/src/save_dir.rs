@@ -1,5 +1,7 @@
 //! Support for saving inputs for later use.
 
+use rapidhash::RapidHashSet;
+
 use crate::FileSystem;
 use crate::archive::ArchiveEntry;
 use crate::archive::ArchiveIterator;
@@ -13,7 +15,6 @@ use crate::input_data::FileLoader;
 use crate::linker_script::LinkerScript;
 use crate::make_executable;
 use crate::platform;
-use foldhash::HashSet;
 use std::borrow::Cow;
 use std::io::BufWriter;
 use std::io::Write;
@@ -75,7 +76,7 @@ impl SaveDir {
         parsed_args: &impl platform::Args,
     ) -> Result {
         if let Some(state) = self.0.as_ref() {
-            let mut files_to_copy = HashSet::default();
+            let mut files_to_copy = RapidHashSet::default();
             collect_input_paths(
                 &state.args,
                 parsed_args,
@@ -177,7 +178,7 @@ fn collect_input_paths(
     args: &[SavedArg],
     parsed_args: &impl platform::Args,
     sysroot: Option<&Path>,
-    paths: &mut HashSet<PathBuf>,
+    paths: &mut RapidHashSet<PathBuf>,
 ) -> Result {
     for arg in args {
         match arg {

@@ -33,7 +33,6 @@ bitflags.workspace = true
 blake3.workspace = true
 diff.workspace = true
 itertools.workspace = true
-foldhash.workspace = true
 gimli.workspace = true
 hex.workspace = true
 linker-diff.path = "../linker-diff"
@@ -44,6 +43,7 @@ object.workspace = true
 wasmparser.workspace = true
 os_info.workspace = true
 rand.workspace = true
+rapidhash.workspace = true
 regex.workspace = true
 serde.workspace = true
 serde-keyvalue = { workspace = true }

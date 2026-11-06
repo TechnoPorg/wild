@@ -1,3 +1,4 @@
+use crate::HashSet;
 /// Evaluation of linker script ASSERT commands after layout is complete.
 ///
 /// NOTE: ASSERT expression evaluation currently supports a subset of GNU ld expression
@@ -30,7 +31,7 @@ use crate::platform::SectionAttributes;
 use crate::symbol::UnversionedSymbolName;
 use crate::symbol_db::SymbolDb;
 use crate::symbol_db::SymbolId;
-use hashbrown::HashMap;
+use crate::HashMap;
 use std::cell::OnceCell;
 
 /// Compute 1-based line number by counting newlines before `remainder` in `file_bytes`.
@@ -874,7 +875,7 @@ pub(crate) fn evaluate_early_expression<'data, P: Platform>(
     symbol_db: &SymbolDb<'data, P>,
     sizeof_headers: u64,
     section_positions: &OnceCell<InputSectionPositions>,
-    visited_nodes: &mut hashbrown::HashSet<SymbolId>,
+    visited_nodes: &mut HashSet<SymbolId>,
 ) -> Result<EvaluatedValue> {
     evaluate_expression(
         expr,
@@ -968,7 +969,7 @@ fn evaluate_early_expression_internal_symbol<'data, P: Platform>(
     symbol_db: &SymbolDb<'data, P>,
     sizeof_headers: u64,
     section_positions: &OnceCell<InputSectionPositions>,
-    visited_nodes: &mut hashbrown::HashSet<SymbolId>,
+    visited_nodes: &mut HashSet<SymbolId>,
     canonical_id: SymbolId,
     def_info: &crate::parsing::InternalSymDefInfo<'data, P>,
 ) -> Result<SymbolValue> {
@@ -1111,6 +1112,7 @@ mod tests {
     use crate::symbol_db::SymbolDb;
     use crate::symbol_db::SymbolIdRange;
     use colosseum::sync::Arena;
+    use rapidhash::fast::GlobalState;
 
     fn with_dummy_context<R>(
         f: impl for<'test> FnOnce(
@@ -1139,7 +1141,7 @@ mod tests {
                 None,
                 layouts,
                 sections,
-                &HashMap::new(),
+                &HashMap::with_hasher(GlobalState::default()),
                 symbol_db,
                 0,
                 &[],
@@ -1540,7 +1542,7 @@ mod tests {
                     layouts,
                     sections,
                     0,
-                    &HashMap::new(),
+                    &HashMap::with_hasher(GlobalState::default()),
                     &[]
                 )
                 .is_ok()
@@ -1562,7 +1564,7 @@ mod tests {
                 layouts,
                 sections,
                 0,
-                &HashMap::new(),
+                &HashMap::with_hasher(GlobalState::default()),
                 &[],
             )
             .unwrap_err();
@@ -1573,7 +1575,8 @@ mod tests {
     #[test]
     fn test_memory_functions_evaluation() {
         with_dummy_context(|layouts, sections, symbol_db| {
-            let regions = HashMap::from([
+            let mut regions = HashMap::with_capacity_and_hasher(2, GlobalState::default());
+            regions.extend([
                 (
                     b"rom" as &[u8],
                     MemoryRegion {
